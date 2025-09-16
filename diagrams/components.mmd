@@ -1,0 +1,51 @@
+%% Agentic GTM Platform - Component Diagram (Mermaid)
+flowchart TD
+    subgraph DataLayer[Data Layer]
+        CRM[(CRM/Email/Calendar APIs)]
+        Enrich[Enrichment APIs]
+        OLTP[(Postgres)]
+        Lake[(Data Lake / Warehouse)]
+        Cache[(Redis)]
+        VDB[(Vector DB - Pinecone)]
+        FeedbackDB[(Feedback DB)]
+    end
+
+    subgraph IngestLayer[Ingestion & Processing]
+        ETL[ETL Workers]
+        Bus[(Kafka/Event Bus)]
+        Embed[Embedding Service]
+    end
+
+    subgraph AgenticLayer[Agents]
+        Planner[Planner Agent]
+        Retriever[Retriever Agent]
+        Decision[Decision Agent]
+        ToolAgents[Tool Agents]
+        Supervisor[Supervisor Agent]
+    end
+
+    subgraph ModelLayer[Model Layer]
+        Gateway[Inference Gateway]
+        PromptCache[Prompt Cache & Templates]
+    end
+
+    CRM --> ETL
+    Enrich --> ETL
+    ETL --> OLTP
+    ETL --> Lake
+    ETL --> Bus
+    Bus --> Embed
+    Embed --> VDB
+    ETL --> Cache
+    Bus --> Planner
+
+    Planner --> Retriever
+    Retriever --> VDB
+    Retriever --> Decision
+    Decision --> Gateway
+    Gateway --> Decision
+    Decision --> ToolAgents
+    ToolAgents --> CRM
+    Decision --> Supervisor
+    Supervisor --> FeedbackDB
+    ToolAgents --> FeedbackDB

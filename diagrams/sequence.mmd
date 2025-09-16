@@ -1,0 +1,29 @@
+%% Agentic GTM Platform - Sequence Diagram (Mermaid)
+sequenceDiagram
+    participant CRM as CRM/Email/Calendar APIs
+    participant Ingest as Ingestion & ETL Workers
+    participant Store as Postgres + Data Lake
+    participant Embed as Embedding Service
+    participant VDB as Vector DB (Pinecone)
+    participant Planner as Planner Agent
+    participant Retriever as Retriever Agent
+    participant Decision as Decision Agent
+    participant Tool as Tool Agents
+    participant Supervisor as Supervisor Agent
+    participant Feedback as Feedback DB + Observability
+
+    CRM->>Ingest: Push events / Webhooks
+    Ingest->>Store: Clean, dedupe, enrich
+    Ingest->>Embed: Send textual artifacts
+    Embed->>VDB: Store embeddings + metadata
+
+    Planner->>Retriever: Define info need for goal
+    Retriever->>VDB: Hybrid search
+    VDB->>Retriever: Return top-k evidence
+    Retriever->>Decision: Evidence + context package
+    Decision->>Supervisor: Candidate actions + rationale
+    Supervisor->>Decision: Approve/Reject/Adjust
+    Decision->>Tool: Execute approved action(s)
+    Tool->>CRM: Update CRM/Calendar
+    Tool->>Feedback: Emit outcome events
+    Feedback->>Supervisor: Update signals
