@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
@@ -5,7 +6,7 @@ from sqlalchemy.orm import Session
 from .db import Base, engine, get_db
 from . import models
 from .settings import RETRIEVER_BACKEND
-from .retriever import TfidfRetriever, ChromaRetriever, PineconeRetrieverStub
+from .retriever import TfidfRetriever, ChromaRetriever, PineconeRetrieverStub, PineconeRetriever
 
 app = FastAPI(title="Agentic GTM Platform API", version="0.2.0")
 
@@ -39,6 +40,12 @@ def get_retriever():
 	if RETRIEVER_BACKEND == "chroma":
 		return ChromaRetriever()
 	if RETRIEVER_BACKEND == "pinecone":
+		if PineconeRetriever is not None:
+			try:
+				return PineconeRetriever()
+			except Exception:
+				# If pinecone env/deps not set, degrade gracefully to stub
+				return PineconeRetrieverStub()
 		return PineconeRetrieverStub()
 	return TfidfRetriever()
 
@@ -102,8 +109,22 @@ class EmailRequest(BaseModel):
 
 @app.post("/tools/email/send")
 async def send_email(req: EmailRequest):
-	# Stub: integrate with real provider (e.g., SendGrid, Gmail API)
-	return {"status": "queued", "to": req.to, "subject": req.subject}
+	# Use SendGrid if configured; otherwise dry-run
+	api_key = os.getenv("SENDGRID_API_KEY")
+	from_addr = os.getenv("EMAIL_FROM_ADDRESS")
+	if api_key and from_addr:
+		try:
+			import sendgrid
+			from sendgrid.helpers.mail import Mail
+			sg = sendgrid.SendGridAPIClient(api_key)
+			message = Mail(from_email=from_addr, to_emails=req.to, subject=req.subject, plain_text_content=req.body)
+			response = sg.client.mail.send.post(request_body=message.get())
+			return {"status": "sent", "provider": "sendgrid", "code": response.status_code}
+		except Exception as e:
+			# Do not leak secrets; return safe error
+			raise HTTPException(status_code=502, detail=f"Email provider error: {type(e).__name__}")
+	# Fallback dry-run
+	return {"status": "queued", "provider": "dry-run", "to": req.to, "subject": req.subject}
 
 
 @app.post("/decide")
