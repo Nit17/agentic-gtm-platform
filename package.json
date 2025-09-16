@@ -1,0 +1,28 @@
+{
+  "name": "agentic-gtm-platform",
+  "version": "1.0.0",
+  "description": "This document outlines the system design for an AI-native Agentic GTM Platform that combines:",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "render:diagrams": "mmdc -i diagrams/sequence.mmd -o diagrams/sequence.svg && mmdc -i diagrams/components.mmd -o diagrams/components.svg"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nit17/agentic-gtm-platform.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Nit17/agentic-gtm-platform/issues"
+  },
+  "homepage": "https://github.com/Nit17/agentic-gtm-platform#readme",
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.10.1"
+  }
+}

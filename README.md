@@ -47,6 +47,8 @@ This document outlines the system design for an AI-native Agentic GTM Platform t
 
 ## 2. Sequence Diagram
 
+![Sequence Diagram](diagrams/sequence.svg)
+
 ```mermaid
 sequenceDiagram
     participant CRM as CRM/Email/Calendar APIs
@@ -81,6 +83,8 @@ sequenceDiagram
 ---
 
 ## 3. Component Diagram
+
+![Component Diagram](diagrams/components.svg)
 
 ```mermaid
 flowchart TD
