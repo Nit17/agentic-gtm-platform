@@ -4,7 +4,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from .db import Base, engine, get_db
 from . import models
-from .search import search_notes
+from .settings import RETRIEVER_BACKEND
+from .retriever import TfidfRetriever, ChromaRetriever, PineconeRetrieverStub
 
 app = FastAPI(title="Agentic GTM Platform API", version="0.2.0")
 
@@ -34,6 +35,12 @@ class Note(NoteIn):
 class SearchRequest(BaseModel):
 	q: str
 	limit: int = 5
+def get_retriever():
+	if RETRIEVER_BACKEND == "chroma":
+		return ChromaRetriever()
+	if RETRIEVER_BACKEND == "pinecone":
+		return PineconeRetrieverStub()
+	return TfidfRetriever()
 
 
 class DecisionRequest(BaseModel):
@@ -81,22 +88,36 @@ async def list_notes(db: Session = Depends(get_db)):
 
 @app.post("/search")
 async def search(req: SearchRequest, db: Session = Depends(get_db)):
-    results = search_notes(db, req.q, limit=req.limit)
-    return {"results": results}
+	retriever = get_retriever()
+	results = retriever.search(db, req.q, limit=req.limit)
+	return {"results": results}
+
+
+# Email tool adapter (interface + stub)
+class EmailRequest(BaseModel):
+	to: List[str]
+	subject: str
+	body: str
+
+
+@app.post("/tools/email/send")
+async def send_email(req: EmailRequest):
+	# Stub: integrate with real provider (e.g., SendGrid, Gmail API)
+	return {"status": "queued", "to": req.to, "subject": req.subject}
 
 
 @app.post("/decide")
 async def decide(req: DecisionRequest, db: Session = Depends(get_db)):
-    # Placeholder decision logic
-    actions = []
-    if req.contact_id and db.get(models.Contact, req.contact_id):
-        actions.append({
-            "type": "email",
-            "payload": {
-                "subject": f"Re: {req.goal_description}",
-                "body": "Draft outreach based on goal.",
-            },
-            "confidence": 0.65,
-            "referenced_evidence_ids": [],
-        })
-    return {"actions": actions}
+	# Placeholder decision logic
+	actions = []
+	if req.contact_id and db.get(models.Contact, req.contact_id):
+		actions.append({
+			"type": "email",
+			"payload": {
+				"subject": f"Re: {req.goal_description}",
+				"body": "Draft outreach based on goal.",
+			},
+			"confidence": 0.65,
+			"referenced_evidence_ids": [],
+		})
+	return {"actions": actions}
